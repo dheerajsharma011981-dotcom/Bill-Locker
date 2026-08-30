@@ -47,7 +47,6 @@ app.post('/api/login', async (req, res) => {
     }
 });
 
-// 💾 सुधरा हुआ रूट: यह सिर्फ एआई द्वारा निकाले गए टेक्स्ट को डेटाबेस में सेव करेगा
 app.post('/api/save-bill', async (req, res) => {
     const { phone, billDetails } = req.body;
     try {

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BillLocker - AI Warranty Manager</title>
-    <!-- 🧠 मुफ्त सुपर-फ़ास्ट एआई इंजन लोड किया जा रहा है -->
+    <!-- 🧠 मुफ्त सुपर-फ़ास्ट एआई इंजन (ब्राउज़र के लिए) -->
     <script src="https://jsdelivr.net"></script>
     <style>
         html, body { height: 100%; margin: 0; padding: 0; background-color: #f4f7f6; font-family: 'Segoe UI', sans-serif; color: #333; }
@@ -17,6 +17,7 @@
         .login-screen { text-align: center; padding: 30px 20px; }
         .input-field { width: 95%; padding: 12px; margin: 15px 0 5px 0; border: 1px solid #ccc; border-radius: 6px; font-size: 16px; outline: none; text-align: center; }
         .btn-block { width: 100%; background-color: #2a5298; color: white; padding: 12px; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px; transition: 0.3s; }
+        .btn-block:hover { background-color: #1e3c72; }
         .upload-box { border: 2px dashed #2a5298; background-color: #f0f4f8; text-align: center; padding: 20px; }
         .result-box { background: #eef2f7; padding: 10px; border-radius: 6px; font-family: monospace; white-space: pre-wrap; text-align: left; max-height: 200px; overflow-y: auto; font-size: 13px; margin-top: 10px; display: none; border-left: 4px solid #5cb85c; }
     </style>
@@ -72,7 +73,22 @@
                 return;
             }
             userPhone = phone;
-            showDashboard();
+
+            try {
+                const response = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phone: phone })
+                });
+                const data = await response.json();
+                if(data.success) {
+                    showDashboard();
+                } else {
+                    showDashboard(); 
+                }
+            } catch (error) {
+                showDashboard();
+            }
         }
 
         function showDashboard() {
@@ -81,7 +97,7 @@
             playWelcomeSound();
         }
 
-        // ⚡ ब्राउज़र के अंदर सीधे स्कैन करने वाला जादुई फंक्शन
+        // ⚡ एआई बिल स्कैनिंग और सेविंग फंक्शन
         async function scanBillDirectly() {
             const fileInput = document.getElementById('billUpload');
             const statusMsg = document.getElementById('statusMsg');
@@ -90,21 +106,21 @@
             if (!fileInput.files || fileInput.files.length === 0) return;
 
             const imageFile = fileInput.files[0];
-            statusMsg.innerText = "🔄 AI is scanning your bill directly in browser... Please wait...";
+            statusMsg.innerText = "🔄 AI is scanning your bill... Please wait 5-10 seconds...";
             statusMsg.style.color = "#2a5298";
             aiResult.style.display = "none";
 
             try {
-                // 🛠️ फ्रंटएंड एआई इंजन फोटो को प्रोसेस कर रहा है
+                // 🛠️ फोन के ब्राउज़र में सीधे एआई रन हो रहा है
                 const result = await Tesseract.recognize(imageFile, 'eng');
                 const extractedText = result.data.text;
 
-                statusMsg.innerText = "✅ AI Scan Complete! Saving text to Cloud...";
+                statusMsg.innerText = "✅ AI Scan Complete! Saving to Cloud database...";
                 statusMsg.style.color = "#5cb85c";
                 aiResult.innerText = extractedText || "No clear text found.";
                 aiResult.style.display = "block";
 
-                // टेक्स्ट मिलने के बाद डेटाबेस में सेव करने के लिए बैकएंड को भेजना
+                // टेक्स्ट को डेटाबेस में सेव करने के लिए बैकएंड को भेजना
                 await fetch('/api/save-bill', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -112,7 +128,7 @@
                 });
 
             } catch (error) {
-                statusMsg.innerText = "❌ Browser Scan Engine Error!";
+                statusMsg.innerText = "❌ Scan Engine Error! Please retry.";
                 statusMsg.style.color = "#d9534f";
                 console.error(error);
             }
