@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BillLocker - AI Warranty Manager</title>
+    <!-- 🧠 मुफ्त सुपर-फ़ास्ट एआई इंजन लोड किया जा रहा है -->
+    <script src="https://jsdelivr.net"></script>
     <style>
         html, body { height: 100%; margin: 0; padding: 0; background-color: #f4f7f6; font-family: 'Segoe UI', sans-serif; color: #333; }
         header { background: linear-gradient(135deg, #1e3c72, #2a5298); color: white; text-align: center; padding: 20px 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
@@ -15,7 +17,6 @@
         .login-screen { text-align: center; padding: 30px 20px; }
         .input-field { width: 95%; padding: 12px; margin: 15px 0 5px 0; border: 1px solid #ccc; border-radius: 6px; font-size: 16px; outline: none; text-align: center; }
         .btn-block { width: 100%; background-color: #2a5298; color: white; padding: 12px; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px; transition: 0.3s; }
-        .btn-block:hover { background-color: #1e3c72; }
         .upload-box { border: 2px dashed #2a5298; background-color: #f0f4f8; text-align: center; padding: 20px; }
         .result-box { background: #eef2f7; padding: 10px; border-radius: 6px; font-family: monospace; white-space: pre-wrap; text-align: left; max-height: 200px; overflow-y: auto; font-size: 13px; margin-top: 10px; display: none; border-left: 4px solid #5cb85c; }
     </style>
@@ -43,9 +44,8 @@
             <div class="card upload-box">
                 <h3>📸 Magic AI Scan</h3>
                 <p>Upload a clear English bill photo to automatically extract details.</p>
-                <input type="file" id="billUpload" accept="image/*" onchange="uploadAndScanBill()">
+                <input type="file" id="billUpload" accept="image/*" onchange="scanBillDirectly()">
                 <p id="statusMsg" style="font-weight: bold; color: #2a5298; margin-top: 10px;"></p>
-                <!-- AI Result Display -->
                 <div id="aiResult" class="result-box"></div>
             </div>
         </div>
@@ -72,22 +72,7 @@
                 return;
             }
             userPhone = phone;
-
-            try {
-                const response = await fetch('/api/login', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ phone: phone })
-                });
-                const data = await response.json();
-                if(data.success) {
-                    showDashboard();
-                } else {
-                    showDashboard(); // Testing bypass
-                }
-            } catch (error) {
-                showDashboard();
-            }
+            showDashboard();
         }
 
         function showDashboard() {
@@ -96,44 +81,38 @@
             playWelcomeSound();
         }
 
-        // 📸 असली AI फोटो स्कैन भेजने का बिल्कुल परफेक्ट फंक्शन
-        async function uploadAndScanBill() {
+        // ⚡ ब्राउज़र के अंदर सीधे स्कैन करने वाला जादुई फंक्शन
+        async function scanBillDirectly() {
             const fileInput = document.getElementById('billUpload');
             const statusMsg = document.getElementById('statusMsg');
             const aiResult = document.getElementById('aiResult');
             
-            if (!fileInput.files || fileInput.files.length === 0) {
-                alert("Please select a photo first!");
-                return;
-            }
+            if (!fileInput.files || fileInput.files.length === 0) return;
 
-            const formData = new FormData();
-            // 🛠️ फिक्स: यहाँ .files[0] लिखकर पहली असली फोटो को सेलेक्ट किया गया है
-            formData.append('billPhoto', fileInput.files[0]); 
-            formData.append('phone', userPhone);
-
-            statusMsg.innerText = "🔄 AI is scanning your bill... Please wait 10-15 seconds...";
+            const imageFile = fileInput.files[0];
+            statusMsg.innerText = "🔄 AI is scanning your bill directly in browser... Please wait...";
             statusMsg.style.color = "#2a5298";
             aiResult.style.display = "none";
 
             try {
-                const response = await fetch('/api/scan-bill', {
-                    method: 'POST',
-                    body: formData
-                });
-                const data = await response.json();
+                // 🛠️ फ्रंटएंड एआई इंजन फोटो को प्रोसेस कर रहा है
+                const result = await Tesseract.recognize(imageFile, 'eng');
+                const extractedText = result.data.text;
 
-                if (data.success) {
-                    statusMsg.innerText = "✅ AI Scan Complete! Saved to Cloud DB.";
-                    statusMsg.style.color = "#5cb85c";
-                    aiResult.innerText = data.details || "No readable text found in the image. Please upload a clearer photo.";
-                    aiResult.style.display = "block";
-                } else {
-                    statusMsg.innerText = "❌ Scan failed: " + data.message;
-                    statusMsg.style.color = "#d9534f";
-                }
+                statusMsg.innerText = "✅ AI Scan Complete! Saving text to Cloud...";
+                statusMsg.style.color = "#5cb85c";
+                aiResult.innerText = extractedText || "No clear text found.";
+                aiResult.style.display = "block";
+
+                // टेक्स्ट मिलने के बाद डेटाबेस में सेव करने के लिए बैकएंड को भेजना
+                await fetch('/api/save-bill', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phone: userPhone, billDetails: extractedText })
+                });
+
             } catch (error) {
-                statusMsg.innerText = "❌ Connection timeout. Server might be processing or restarting.";
+                statusMsg.innerText = "❌ Browser Scan Engine Error!";
                 statusMsg.style.color = "#d9534f";
                 console.error(error);
             }
