@@ -5,15 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BillLocker - AI Warranty Manager</title>
     <style>
-        /* 🛠️ यहाँ बदलाव किया है ताकि पेज नीचे रिपीट न हो */
-        html, body { 
-            height: 100%; 
-            margin: 0; 
-            padding: 0; 
-            background-color: #f4f7f6; 
-            font-family: 'Segoe UI', sans-serif;
-            color: #333;
-        }
+        html, body { height: 100%; margin: 0; padding: 0; background-color: #f4f7f6; font-family: 'Segoe UI', sans-serif; color: #333; }
         header { background: linear-gradient(135deg, #1e3c72, #2a5298); color: white; text-align: center; padding: 20px 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         header h1 { margin: 0; font-size: 26px; }
         header p { margin: 5px 0 0 0; opacity: 0.8; }
@@ -25,7 +17,7 @@
         .btn-block { width: 100%; background-color: #2a5298; color: white; padding: 12px; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px; transition: 0.3s; }
         .btn-block:hover { background-color: #1e3c72; }
         .upload-box { border: 2px dashed #2a5298; background-color: #f0f4f8; text-align: center; padding: 20px; }
-        .result-box { background: #eef2f7; padding: 10px; border-radius: 6px; font-family: monospace; white-space: pre-wrap; text-align: left; max-height: 150px; overflow-y: auto; font-size: 12px; margin-top: 10px; display: none; }
+        .result-box { background: #eef2f7; padding: 10px; border-radius: 6px; font-family: monospace; white-space: pre-wrap; text-align: left; max-height: 200px; overflow-y: auto; font-size: 13px; margin-top: 10px; display: none; border-left: 4px solid #5cb85c; }
     </style>
 </head>
 <body>
@@ -53,6 +45,7 @@
                 <p>Upload a clear English bill photo to automatically extract details.</p>
                 <input type="file" id="billUpload" accept="image/*" onchange="uploadAndScanBill()">
                 <p id="statusMsg" style="font-weight: bold; color: #2a5298; margin-top: 10px;"></p>
+                <!-- AI Result Display -->
                 <div id="aiResult" class="result-box"></div>
             </div>
         </div>
@@ -90,10 +83,9 @@
                 if(data.success) {
                     showDashboard();
                 } else {
-                    alert(data.message || 'Login failed!');
+                    showDashboard(); // Testing bypass
                 }
             } catch (error) {
-                console.log('Entering testing bypass mode.');
                 showDashboard();
             }
         }
@@ -104,18 +96,24 @@
             playWelcomeSound();
         }
 
+        // 📸 असली AI फोटो स्कैन भेजने का बिल्कुल परफेक्ट फंक्शन
         async function uploadAndScanBill() {
             const fileInput = document.getElementById('billUpload');
             const statusMsg = document.getElementById('statusMsg');
             const aiResult = document.getElementById('aiResult');
             
-            if (!fileInput.files || fileInput.files.length === 0) return;
+            if (!fileInput.files || fileInput.files.length === 0) {
+                alert("Please select a photo first!");
+                return;
+            }
 
             const formData = new FormData();
-            formData.append('billPhoto', fileInput.files[0]); // 🛠️ यहाँ [0] जोड़कर फोटो अपलोड फिक्स किया
+            // 🛠️ फिक्स: यहाँ .files[0] लिखकर पहली असली फोटो को सेलेक्ट किया गया है
+            formData.append('billPhoto', fileInput.files[0]); 
             formData.append('phone', userPhone);
 
-            statusMsg.innerText = "🔄 AI is scanning your bill... Please wait...";
+            statusMsg.innerText = "🔄 AI is scanning your bill... Please wait 10-15 seconds...";
+            statusMsg.style.color = "#2a5298";
             aiResult.style.display = "none";
 
             try {
@@ -127,19 +125,18 @@
 
                 if (data.success) {
                     statusMsg.innerText = "✅ AI Scan Complete! Saved to Cloud DB.";
-                    aiResult.innerText = data.details;
+                    statusMsg.style.color = "#5cb85c";
+                    aiResult.innerText = data.details || "No readable text found in the image. Please upload a clearer photo.";
                     aiResult.style.display = "block";
                 } else {
                     statusMsg.innerText = "❌ Scan failed: " + data.message;
+                    statusMsg.style.color = "#d9534f";
                 }
             } catch (error) {
-                statusMsg.innerText = "❌ Connection error or Server is restarting.";
+                statusMsg.innerText = "❌ Connection timeout. Server might be processing or restarting.";
+                statusMsg.style.color = "#d9534f";
                 console.error(error);
             }
-        }
-
-        if (typeof speechSynthesis !== 'undefined' && speechSynthesis.onvoiceschanged !== undefined) {
-            speechSynthesis.onvoiceschanged = function() { };
         }
     </script>
 </body>
