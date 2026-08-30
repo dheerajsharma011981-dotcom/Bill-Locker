@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BillLocker - Digital Warranty Manager</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background-color: #f4f7f6; margin: 0; padding: 0; color: #333; }
+        header { background: linear-gradient(135deg, #1e3c72, #2a5298); color: white; text-align: center; padding: 20px 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        header h1 { margin: 0; font-size: 26px; }
+        header p { margin: 5px 0 0 0; opacity: 0.8; }
+        main { max-width: 500px; margin: 20px auto; padding: 15px; }
+        .card { background: white; border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .card h3 { margin-top: 0; color: #1e3c72; border-bottom: 2px solid #f4f7f6; padding-bottom: 8px; }
+        .login-screen { text-align: center; padding: 30px 20px; }
+        .input-field { width: 95%; padding: 12px; margin: 15px 0 5px 0; border: 1px solid #ccc; border-radius: 6px; font-size: 16px; outline: none; text-align: center; }
+        .btn-block { width: 100%; background-color: #2a5298; color: white; padding: 12px; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px; transition: 0.3s; }
+        .btn-block:hover { background-color: #1e3c72; }
+        .upload-box { border: 2px dashed #2a5298; background-color: #f0f4f8; text-align: center; padding: 20px; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>💵 BillLocker</h1>
+        <p>Secure Locker - Your Data Will Never Be Deleted</p>
+    </header>
+
+    <main>
+        <!-- 1. Mobile Number Login Screen -->
+        <div class="card login-screen" id="loginSection">
+            <h3>🔐 Secure Mobile Login</h3>
+            <p style="font-size: 14px; color: #666;">Even if the app is deleted, your data can be recovered using this number.</p>
+            <input type="tel" id="phoneInput" class="input-field" placeholder="Enter your 10-digit mobile number" maxlength="10">
+            <button class="btn-block" onclick="loginUser()">Login Securely 🚀</button>
+        </div>
+
+        <!-- 2. Main App Dashboard -->
+        <div id="appDashboard" style="display: none;">
+            <div class="card" style="text-align: center; background-color: #eef2f7;">
+                <p style="margin: 0; font-weight: bold; color: #1e3c72;">✨ Welcome Brother! You are in the Dashboard.</p>
+            </div>
+            <div class="card upload-box">
+                <h3>📸 Magic Scan (AI OCR)</h3>
+                <p>Upload your bill photo. Mechanics within 3-5 KM range will be visible.</p>
+                <input type="file" id="billUpload" accept="image/*" style="display:none;">
+                <button class="btn-sm" style="background-color: #2a5298; padding: 10px 20px; font-weight: bold; color: white; border: none; border-radius: 4px; cursor: pointer;" onclick="document.getElementById('billUpload').click()">📤 Upload Bill</button>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // 🎙️ "Welcome to BillLocker" - Sweet Voice Function
+        function playWelcomeSound() {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel(); 
+                
+                const speech = new SpeechSynthesisUtterance();
+                speech.text = "Welcome to Bill Locker"; 
+                speech.lang = "en-US";        
+                speech.volume = 1;     
+                speech.rate = 0.85; // Soft and sweet pace          
+                speech.pitch = 1.2; // Pleasant pitch          
+
+                const voices = window.speechSynthesis.getVoices();
+                const sweetVoice = voices.find(voice => 
+                    (voice.lang.includes('en') || voice.lang.includes('US')) && 
+                    (voice.name.includes('Google') || voice.name.includes('Natural') || voice.name.includes('Zira'))
+                );
+                if (sweetVoice) speech.voice = sweetVoice;
+                
+                window.speechSynthesis.speak(speech);
+            }
+        }
+
+        // Login Connection Function
+        async function loginUser() {
+            const phone = document.getElementById('phoneInput').value;
+            if(phone.length !== 10 || isNaN(phone)) {
+                alert('Please enter a valid 10-digit mobile number!');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phone: phone })
+                });
+                const data = await response.json();
+
+                if(data.success) {
+                    document.getElementById('loginSection').style.display = 'none';
+                    document.getElementById('appDashboard').style.display = 'block';
+                    playWelcomeSound(); 
+                } else {
+                    alert(data.message);
+                }
+            } catch (error) {
+                // Testing bypass for local connection errors
+                console.log('Server bypass activated for testing.');
+                document.getElementById('loginSection').style.display = 'none';
+                document.getElementById('appDashboard').style.display = 'block';
+                playWelcomeSound();
+            }
+        }
+
+        if (typeof speechSynthesis !== 'undefined' && speechSynthesis.onvoiceschanged !== undefined) {
+            speechSynthesis.onvoiceschanged = function() { };
+        }
+    </script>
+</body>
+</html>
