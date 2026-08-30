@@ -1,73 +1,93 @@
 const express = require('express');
 const mongoose = require('mongoose'); 
 const path = require('path');
+const multer = require('multer'); // फोटो अपलोड के लिए
+const Tesseract = require('tesseract.js'); // असली AI OCR
 const app = express();
 
 const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(express.static(path.join(__dirname)));
+
+// फोटो को अस्थाई रूप से सेव करने की सेटिंग
+const upload = multer({ dest: 'uploads/' });
 
 // 🔌 आपकी मुफ़्त क्लाउड तिजोरी का लिंक
 const DATABASE_URL = "mongodb+srv://dheerajsharma011981_db_user:IKy1PPgLAZnSj3yB@cluster0.ungpjcc.mongodb.net/BillLockerDB?appName=cluster0";
 
 mongoose.connect(DATABASE_URL)
-.then(() => console.log("💪 जादुई क्लाउड तिजोरी (MongoDB Atlas) सफलतापूर्वक कनेक्ट हो गई है!"))
-.catch((err) => console.error("❌ क्लाउड डेटाबेस कनेक्ट करने में दिक्कत आई:", err));
+.then(() => console.log("💪 जादुई क्लाउड तिजोरी सफलतापूर्वक कनेक्ट हो गई है!"))
+.catch((err) => console.error("❌ क्लाउड डेटाबेस एरर:", err));
 
-// 📝 डेटाबेस का नियम
+// 📝 डेटाबेस का नया नियम (बिल डिटेल्स के साथ)
+const BillSchema = new mongoose.Schema({
+    phone: String,
+    billDetails: String,
+    createdAt: { type: Date, default: Date.now }
+});
+const Bill = mongoose.model('Bill', BillSchema);
+
 const UserSchema = new mongoose.Schema({
     phone: String,
     createdAt: { type: Date, default: Date.now }
 });
-
 const User = mongoose.model('User', UserSchema);
-
-app.use(express.static(path.join(__dirname)));
 
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// 🔐 स्मार्ट लॉगिन रूट (किसी भी फोन से पुराना बिल खोलने के लिए)
+// 🔐 लॉगिन रूट
 app.post('/api/login', async (req, res) => {
     const { phone } = req.body;
-    
-    if (!phone || phone.length !== 10) {
-        return res.status(400).json({ success: false, message: "Please enter a valid 10-digit number!" });
-    }
+    if (!phone || phone.length !== 10) return res.status(400).json({ success: false, message: "Invalid number!" });
 
     try {
-        // 🔍 स्टेप 1: क्लाउड तिजोरी में चेक करो कि यह नंबर पहले से है या नहीं
         let existingUser = await User.findOne({ phone: phone });
-
-        if (existingUser) {
-            // 🔓 अगर नंबर मिल गया (पुराना ग्राहक है)
-            console.log(`\n🎉 [पुराना ग्राहक वापस आया!]`);
-            console.log(`📱 नंबर किसी भी फोन से लॉगिन हुआ: ${phone}`);
-            return res.json({ 
-                success: true, 
-                message: "Welcome back! Fetching your bills...",
-                isNewUser: false 
-            });
-        } else {
-            // 🆕 अगर नंबर नहीं मिला (नया ग्राहक है), तो नया अकाउंट बनाओ
+        if (!existingUser) {
             const newUser = new User({ phone: phone });
             await newUser.save();
-            console.log(`\n🎉 [नया ग्राहक रजिस्टर्ड हुआ!]`);
-            console.log(`☁️ नया नंबर हमेशा के लिए क्लाउड पर सेव हुआ: ${phone}`);
-            return res.json({ 
-                success: true, 
-                message: "Account created successfully!",
-                isNewUser: true 
-            });
         }
+        res.json({ success: true, message: "Login successful!" });
     } catch (err) {
-        console.error("❌ डेटाबेस एरर आया:", err);
-        res.status(500).json({ success: false, message: "Server error occurred!" });
+        res.status(500).json({ success: false, message: "Server error!" });
+    }
+});
+
+// 📸 असली AI मैजिक स्कैन रूट (यह फोटो से टेक्स्ट निकालेगा)
+app.post('/api/scan-bill', upload.single('billPhoto'), async (req, res) => {
+    const { phone } = req.body;
+    if (!req.file) return res.status(400).json({ success: false, message: "No photo uploaded!" });
+
+    console.log("🔄 AI बिल को स्कैन कर रहा है...");
+
+    try {
+        // Tesseract AI फोटो को पढ़ रहा है
+        const result = await Tesseract.recognize(req.file.path, 'eng');
+        const extractedText = result.data.text;
+
+        console.log("✨ AI ने बिल से यह टेक्स्ट निकाला:\n", extractedText);
+
+        // डेटाबेस में बिल का टेक्स्ट सुरक्षित सेव करना
+        const newBill = new Bill({
+            phone: phone,
+            billDetails: extractedText
+        });
+        await newBill.save();
+
+        res.json({ 
+            success: true, 
+            message: "Bill scanned and saved by AI!", 
+            details: extractedText 
+        });
+    } catch (error) {
+        console.error("❌ AI स्कैनिंग फेल हुई:", error);
+        res.status(500).json({ success: false, message: "AI Scan failed!" });
     }
 });
 
 app.listen(PORT, () => {
-    console.log(`🚀 पार्टनर, हमारा क्लाउड सर्वर ऑन हो गया है!`);
+    console.log(`🚀 पार्टनर, हमारा AI क्लाउड सर्वर ऑन हो गया है!`);
 });
