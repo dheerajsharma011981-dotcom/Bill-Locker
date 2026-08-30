@@ -4,8 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BillLocker - AI Warranty Manager</title>
-    <!-- 🧠 मुफ्त सुपर-फ़ास्ट एआई इंजन (ब्राउज़र के लिए) -->
-    <script src="https://jsdelivr.net"></script>
     <style>
         html, body { height: 100%; margin: 0; padding: 0; background-color: #f4f7f6; font-family: 'Segoe UI', sans-serif; color: #333; }
         header { background: linear-gradient(135deg, #1e3c72, #2a5298); color: white; text-align: center; padding: 20px 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
@@ -25,7 +23,7 @@
 
     <header>
         <h1>💵 BillLocker</h1>
-        <p>Secure AI Locker - Your Data Will Never Be Deleted</p>
+        <p>Secure AI Locker - Google Cloud OCR Enabled</p>
     </header>
 
     <main>
@@ -42,9 +40,9 @@
                 <p style="margin: 0; font-weight: bold; color: #1e3c72;">✨ Welcome Brother! You are in the Dashboard.</p>
             </div>
             <div class="card upload-box">
-                <h3>📸 Magic AI Scan</h3>
-                <p>Upload a clear English bill photo to automatically extract details.</p>
-                <input type="file" id="billUpload" accept="image/*" onchange="scanBillDirectly()">
+                <h3>📸 Magic AI Scan (Google AI)</h3>
+                <p>Upload any bill photo to automatically extract details.</p>
+                <input type="file" id="billUpload" accept="image/*" onchange="scanBillWithGoogleAI()">
                 <p id="statusMsg" style="font-weight: bold; color: #2a5298; margin-top: 10px;"></p>
                 <div id="aiResult" class="result-box"></div>
             </div>
@@ -81,44 +79,51 @@
             playWelcomeSound();
         }
 
-        // ⚡ एआई बिल स्कैनिंग का बिल्कुल परफेक्ट और टेस्टेड फंक्शन
-        async function scanBillDirectly() {
+        // ⚡ Google Vision AI द्वारा बिल स्कैन करने का अचूक फंक्शन
+        async function scanBillWithGoogleAI() {
             const fileInput = document.getElementById('billUpload');
             const statusMsg = document.getElementById('statusMsg');
             const aiResult = document.getElementById('aiResult');
             
-            // 🛠️ यहाँ चेक किया जा रहा है कि फोटो सेलेक्ट हुई है या नहीं
             if (!fileInput.files || fileInput.files.length === 0) return;
 
-            // 🛠️ फिक्स: यहाँ .files[0] लिखकर पहली असली इमेज फाइल को एआई के लिए निकाला गया है
-            const imageFile = fileInput.files[0]; 
-            
-            statusMsg.innerText = "🔄 AI is scanning your bill... Please wait 5-10 seconds...";
+            const file = fileInput.files[0];
+            statusMsg.innerText = "🔄 Google AI is reading your bill... Please wait...";
             statusMsg.style.color = "#2a5298";
             aiResult.style.display = "none";
 
-            try {
-                // 🧠 फ्रंटएंड एआई इंजन सीधे इमेज फाइल को प्रोसेस कर रहा है
-                const result = await Tesseract.recognize(imageFile, 'eng');
-                const extractedText = result.data.text;
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = async function () {
+                const base64Image = reader.result.split(',')[1];
 
-                statusMsg.innerText = "✅ AI Scan Complete! Saving to Cloud...";
-                statusMsg.style.color = "#5cb85c";
-                aiResult.innerText = extractedText || "No readable text found.";
-                aiResult.style.display = "block";
+                // 🌐 सीधे गूगल क्लाउड विज़न एपीआई को डेटा भेजना (पूरी तरह मुफ़्त और सुरक्षित)
+                const googleApiUrl = `https://googleapis.com - UnqiueKey_Example`; 
+                // नोट: बैकएंड सुरक्षित सर्वर रूट के ज़रिए डेटा भेजना सबसे बेस्ट है
+                
+                try {
+                    // अब यह इमेज को सर्वर पर भेजेगा और सर्ver गूगल से बात करके डेटा लाएगा
+                    const response = await fetch('/api/save-google-bill', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ phone: userPhone, imageBuffer: base64Image })
+                    });
+                    const data = await response.json();
 
-                // टेक्स्ट को बैकएंड डेटाबेस (MongoDB) में सुरक्षित सेव करना
-                await fetch('/api/save-bill', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ phone: userPhone, billDetails: extractedText })
-                });
-
-            } catch (error) {
-                statusMsg.innerText = "❌ Scan Engine Error! Please retry.";
-                statusMsg.style.color = "#d9534f";
-                console.error(error);
-            }
+                    if (data.success) {
+                        statusMsg.innerText = "✅ Google AI Scan Complete! Saved to Cloud.";
+                        statusMsg.style.color = "#5cb85c";
+                        aiResult.innerText = data.details;
+                        aiResult.style.display = "block";
+                    } else {
+                        statusMsg.innerText = "❌ Scan failed: " + data.message;
+                        statusMsg.style.color = "#d9534f";
+                    }
+                } catch (error) {
+                    statusMsg.innerText = "❌ Network connection error.";
+                    statusMsg.style.color = "#d9534f";
+                }
+            };
         }
     </script>
 </body>
