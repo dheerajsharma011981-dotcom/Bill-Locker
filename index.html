@@ -5,7 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BillLocker - AI Warranty Manager</title>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background-color: #f4f7f6; margin: 0; padding: 0; color: #333; }
+        /* 🛠️ यहाँ बदलाव किया है ताकि पेज नीचे रिपीट न हो */
+        html, body { 
+            height: 100%; 
+            margin: 0; 
+            padding: 0; 
+            background-color: #f4f7f6; 
+            font-family: 'Segoe UI', sans-serif;
+            color: #333;
+        }
         header { background: linear-gradient(135deg, #1e3c72, #2a5298); color: white; text-align: center; padding: 20px 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         header h1 { margin: 0; font-size: 26px; }
         header p { margin: 5px 0 0 0; opacity: 0.8; }
@@ -45,7 +53,6 @@
                 <p>Upload a clear English bill photo to automatically extract details.</p>
                 <input type="file" id="billUpload" accept="image/*" onchange="uploadAndScanBill()">
                 <p id="statusMsg" style="font-weight: bold; color: #2a5298; margin-top: 10px;"></p>
-                <!-- AI Result Display -->
                 <div id="aiResult" class="result-box"></div>
             </div>
         </div>
@@ -86,14 +93,9 @@
                     alert(data.message || 'Login failed!');
                 }
             } catch (error) {
-                console.log('Server connection error, entering bypass mode.');
+                console.log('Entering testing bypass mode.');
                 showDashboard();
             }
-        }
-
-        // ब्राउज़र में आवाज की लोडिंग सुनिश्चित करने के लिए
-        if (typeof speechSynthesis !== 'undefined' && speechSynthesis.onvoiceschanged !== undefined) {
-            speechSynthesis.onvoiceschanged = function() { };
         }
 
         function showDashboard() {
@@ -102,7 +104,6 @@
             playWelcomeSound();
         }
 
-        // 📸 असली AI फोटो स्कैन भेजने का सुधरा हुआ फंक्शन
         async function uploadAndScanBill() {
             const fileInput = document.getElementById('billUpload');
             const statusMsg = document.getElementById('statusMsg');
@@ -111,7 +112,7 @@
             if (!fileInput.files || fileInput.files.length === 0) return;
 
             const formData = new FormData();
-            formData.append('billPhoto', fileInput.files[0]); // 🛠️ यहाँ [0] जोड़कर फिक्स किया है
+            formData.append('billPhoto', fileInput.files[0]); // 🛠️ यहाँ [0] जोड़कर फोटो अपलोड फिक्स किया
             formData.append('phone', userPhone);
 
             statusMsg.innerText = "🔄 AI is scanning your bill... Please wait...";
@@ -136,146 +137,9 @@
                 console.error(error);
             }
         }
-    </script>
-</body>
-</html>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BillLocker - AI Warranty Manager</title>
-    <style>
-        body { font-family: 'Segoe UI', sans-serif; background-color: #f4f7f6; margin: 0; padding: 0; color: #333; }
-        header { background: linear-gradient(135deg, #1e3c72, #2a5298); color: white; text-align: center; padding: 20px 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        header h1 { margin: 0; font-size: 26px; }
-        header p { margin: 5px 0 0 0; opacity: 0.8; }
-        main { max-width: 500px; margin: 20px auto; padding: 15px; }
-        .card { background: white; border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
-        .card h3 { margin-top: 0; color: #1e3c72; border-bottom: 2px solid #f4f7f6; padding-bottom: 8px; }
-        .login-screen { text-align: center; padding: 30px 20px; }
-        .input-field { width: 95%; padding: 12px; margin: 15px 0 5px 0; border: 1px solid #ccc; border-radius: 6px; font-size: 16px; outline: none; text-align: center; }
-        .btn-block { width: 100%; background-color: #2a5298; color: white; padding: 12px; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px; transition: 0.3s; }
-        .btn-block:hover { background-color: #1e3c72; }
-        .upload-box { border: 2px dashed #2a5298; background-color: #f0f4f8; text-align: center; padding: 20px; }
-        .result-box { background: #eef2f7; padding: 10px; border-radius: 6px; font-family: monospace; white-space: pre-wrap; text-align: left; max-height: 150px; overflow-y: auto; font-size: 12px; margin-top: 10px; display: none; }
-    </style>
-</head>
-<body>
 
-    <header>
-        <h1>💵 BillLocker</h1>
-        <p>Secure AI Locker - Your Data Will Never Be Deleted</p>
-    </header>
-
-    <main>
-        <!-- Login Screen -->
-        <div class="card login-screen" id="loginSection">
-            <h3>🔐 Secure Mobile Login</h3>
-            <input type="tel" id="phoneInput" class="input-field" placeholder="Enter your 10-digit mobile number" maxlength="10">
-            <button class="btn-block" onclick="loginUser()">Login Securely 🚀</button>
-        </div>
-
-        <!-- Dashboard -->
-        <div id="appDashboard" style="display: none;">
-            <div class="card" style="text-align: center; background-color: #eef2f7;">
-                <p style="margin: 0; font-weight: bold; color: #1e3c72;">✨ Welcome Brother! You are in the Dashboard.</p>
-            </div>
-            <div class="card upload-box">
-                <h3>📸 Magic AI Scan</h3>
-                <p>Upload a clear English bill photo to automatically extract details.</p>
-                <input type="file" id="billUpload" accept="image/*" onchange="uploadAndScanBill()">
-                <p id="statusMsg" style="font-weight: bold; color: #2a5298; margin-top: 10px;"></p>
-                <!-- AI Result Display -->
-                <div id="aiResult" class="result-box"></div>
-            </div>
-        </div>
-    </main>
-
-    <script>
-        let userPhone = "";
-
-        function playWelcomeSound() {
-            if ('speechSynthesis' in window) {
-                window.speechSynthesis.cancel(); 
-                const speech = new SpeechSynthesisUtterance("Welcome to Bill Locker"); 
-                speech.lang = "en-US";        
-                speech.rate = 0.85;          
-                speech.pitch = 1.2;          
-                window.speechSynthesis.speak(speech);
-            }
-        }
-
-        async function loginUser() {
-            const phone = document.getElementById('phoneInput').value;
-            if(phone.length !== 10 || isNaN(phone)) {
-                alert('Please enter a valid 10-digit mobile number!');
-                return;
-            }
-            userPhone = phone;
-
-            try {
-                const response = await fetch('/api/login', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ phone: phone })
-                });
-                const data = await response.json();
-                if(data.success) {
-                    showDashboard();
-                } else {
-                    alert(data.message || 'Login failed!');
-                }
-            } catch (error) {
-                console.log('Server connection error, entering bypass mode.');
-                showDashboard();
-            }
-        }
-
-        // ब्राउज़र में आवाज की लोडिंग सुनिश्चित करने के लिए
         if (typeof speechSynthesis !== 'undefined' && speechSynthesis.onvoiceschanged !== undefined) {
             speechSynthesis.onvoiceschanged = function() { };
-        }
-
-        function showDashboard() {
-            document.getElementById('loginSection').style.display = 'none';
-            document.getElementById('appDashboard').style.display = 'block';
-            playWelcomeSound();
-        }
-
-        // 📸 असली AI फोटो स्कैन भेजने का सुधरा हुआ फंक्शन
-        async function uploadAndScanBill() {
-            const fileInput = document.getElementById('billUpload');
-            const statusMsg = document.getElementById('statusMsg');
-            const aiResult = document.getElementById('aiResult');
-            
-            if (!fileInput.files || fileInput.files.length === 0) return;
-
-            const formData = new FormData();
-            formData.append('billPhoto', fileInput.files[0]); // 🛠️ यहाँ [0] जोड़कर फिक्स किया है
-            formData.append('phone', userPhone);
-
-            statusMsg.innerText = "🔄 AI is scanning your bill... Please wait...";
-            aiResult.style.display = "none";
-
-            try {
-                const response = await fetch('/api/scan-bill', {
-                    method: 'POST',
-                    body: formData
-                });
-                const data = await response.json();
-
-                if (data.success) {
-                    statusMsg.innerText = "✅ AI Scan Complete! Saved to Cloud DB.";
-                    aiResult.innerText = data.details;
-                    aiResult.style.display = "block";
-                } else {
-                    statusMsg.innerText = "❌ Scan failed: " + data.message;
-                }
-            } catch (error) {
-                statusMsg.innerText = "❌ Connection error or Server is restarting.";
-                console.error(error);
-            }
         }
     </script>
 </body>
